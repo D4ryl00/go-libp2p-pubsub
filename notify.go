@@ -9,32 +9,49 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/host/eventbus"
 )
 
-type PubSubNotif PubSub
+type PubSubNotif struct {
+	*PubSub
 
-func (p *PubSubNotif) startMonitoring() error {
-	sub, err := p.host.EventBus().Subscribe([]interface{}{
-		new(event.EvtPeerConnectednessChanged),
-		new(event.EvtPeerProtocolsUpdated),
+	sub event.Subscription
+}
+
+func newPubSubNotif(ps *PubSub) (*PubSubNotif, error) {
+	sub, err := ps.host.EventBus().Subscribe([]interface{}{
+		&event.EvtPeerConnectednessChanged{},
+		&event.EvtPeerProtocolsUpdated{},
 	}, eventbus.Name("libp2p/pubsub/notify"))
 	if err != nil {
-		return fmt.Errorf("unable to subscribe to EventBus: %w", err)
+		return nil, fmt.Errorf("unable to subscribe to EventBus: %w", err)
 	}
 
+	p := &PubSubNotif{
+		PubSub: ps,
+		sub:    sub,
+	}
+
+	return p, nil
+}
+
+func (p *PubSubNotif) startMonitoring() error {
+	fmt.Println("startMonitoring")
+
 	go func() {
-		defer sub.Close()
+		defer p.sub.Close()
 
 		for {
 			var e interface{}
 			select {
 			case <-p.ctx.Done():
 				return
-			case e = <-sub.Out():
+			case e = <-p.sub.Out():
 			}
+			fmt.Println("Event received", e)
 
 			switch evt := e.(type) {
 			case event.EvtPeerConnectednessChanged:
 				switch evt.Connectedness {
 				case network.Connected:
+					fmt.Println("Connected")
 					go p.AddPeers(evt.Peer)
 				case network.NotConnected:
 					go p.RemovePeers(evt.Peer)
@@ -54,6 +71,10 @@ func (p *PubSubNotif) startMonitoring() error {
 			}
 		}
 	}()
+
+	// add current peers to notify system
+	p.AddPeers(p.host.Network().Peers()...)
+	fmt.Println("AddPeers done")
 
 	return nil
 }

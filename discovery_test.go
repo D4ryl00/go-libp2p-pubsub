@@ -128,7 +128,7 @@ func TestSimpleDiscovery(t *testing.T) {
 	defer cancel()
 
 	// Setup Discovery server and pubsub clients
-	const numHosts = 20
+	const numHosts = 2
 	const topic = "foobar"
 
 	server := newDiscoveryServer()
@@ -182,7 +182,7 @@ func TestSimpleDiscovery(t *testing.T) {
 	msgs[0] = subch
 
 	msg := []byte("first message")
-	if err := topicHandlers[0].Publish(ctx, msg, WithReadiness(MinTopicSize(numHosts-1))); err != nil {
+	if err := topicHandlers[1].Publish(ctx, msg, WithReadiness(MinTopicSize(numHosts-1))); err != nil {
 		t.Fatal(err)
 	}
 

@@ -329,17 +329,20 @@ func NewPubSub(ctx context.Context, h host.Host, rt PubSubRouter, opts ...Option
 	}
 
 	// start monitoring for new peers
-	notify := (*PubSubNotif)(ps)
-	if err := notify.startMonitoring(); err != nil {
-		return nil, fmt.Errorf("unable to start pubsub monitoring: %w", err)
+	notify, err := newPubSubNotif(ps)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the pubsub monitoring: %w", err)
 	}
+
+	<-time.After(100 * time.Millisecond)
 
 	ps.val.Start(ps)
 
 	go ps.processLoop(ctx)
 
-	// add current peers to notify system
-	notify.AddPeers(h.Network().Peers()...)
+	if err := notify.startMonitoring(); err != nil {
+		return nil, fmt.Errorf("unable to start pubsub monitoring: %w", err)
+	}
 
 	return ps, nil
 }
@@ -578,6 +581,7 @@ func (p *PubSub) processLoop(ctx context.Context) {
 	for {
 		select {
 		case <-p.newPeers:
+			fmt.Println("newPeers")
 			p.handlePendingPeers()
 
 		case s := <-p.newPeerStream:
