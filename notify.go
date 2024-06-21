@@ -33,8 +33,6 @@ func newPubSubNotif(ps *PubSub) (*PubSubNotif, error) {
 }
 
 func (p *PubSubNotif) startMonitoring() error {
-	fmt.Println("startMonitoring")
-
 	go func() {
 		defer p.sub.Close()
 
@@ -45,13 +43,11 @@ func (p *PubSubNotif) startMonitoring() error {
 				return
 			case e = <-p.sub.Out():
 			}
-			fmt.Println("Event received", e)
 
 			switch evt := e.(type) {
 			case event.EvtPeerConnectednessChanged:
 				switch evt.Connectedness {
 				case network.Connected:
-					fmt.Println("Connected")
 					go p.AddPeers(evt.Peer)
 				case network.NotConnected:
 					go p.RemovePeers(evt.Peer)
@@ -74,7 +70,6 @@ func (p *PubSubNotif) startMonitoring() error {
 
 	// add current peers to notify system
 	p.AddPeers(p.host.Network().Peers()...)
-	fmt.Println("AddPeers done")
 
 	return nil
 }

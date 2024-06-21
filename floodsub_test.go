@@ -19,6 +19,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/libp2p/go-libp2p/p2p/host/eventbus"
 
 	bhost "github.com/libp2p/go-libp2p/p2p/host/blank"
 	swarmt "github.com/libp2p/go-libp2p/p2p/net/swarm/testing"
@@ -46,8 +47,15 @@ func getNetHosts(t *testing.T, ctx context.Context, n int) []host.Host {
 	var out []host.Host
 
 	for i := 0; i < n; i++ {
-		netw := swarmt.GenSwarm(t)
-		h := bhost.NewBlankHost(netw)
+		eventbus := eventbus.NewBus()
+		swarmOpts := []swarmt.Option{
+			swarmt.EventBus(eventbus),
+		}
+		hostOpts := []bhost.Option{
+			bhost.WithEventBus(eventbus),
+		}
+		netw := swarmt.GenSwarm(t, swarmOpts...)
+		h := bhost.NewBlankHost(netw, hostOpts...)
 		t.Cleanup(func() { h.Close() })
 		out = append(out, h)
 	}

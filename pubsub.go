@@ -334,8 +334,6 @@ func NewPubSub(ctx context.Context, h host.Host, rt PubSubRouter, opts ...Option
 		return nil, fmt.Errorf("unable to initialize the pubsub monitoring: %w", err)
 	}
 
-	<-time.After(100 * time.Millisecond)
-
 	ps.val.Start(ps)
 
 	go ps.processLoop(ctx)
